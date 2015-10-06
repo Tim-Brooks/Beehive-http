@@ -14,15 +14,28 @@
 
 (ns beehive-http.core
   (:require [beehive.future :as f])
-  (:import (com.ning.http.client AsyncHttpClient RequestBuilder)
+  (:import (com.ning.http.client AsyncHttpClient
+                                 RequestBuilder
+                                 AsyncHttpProvider
+                                 AsyncHttpClientConfig$Builder)
+           (com.ning.http.client.providers.netty NettyAsyncHttpProviderConfig NettyAsyncHttpProvider)
            (com.ning.http.client.providers.netty.response NettyResponse)
            (net.uncontended.precipice ServiceProperties RejectedActionException)
-           (net.uncontended.precipice_implementations.asynchttp HttpAsyncService)))
+           (net.uncontended.precipice_implementations.asynchttp HttpAsyncService)
+           (java.util.concurrent TimeUnit)
+           (org.jboss.netty.util HashedWheelTimer)))
 
 (set! *warn-on-reflection* true)
 
 (defn async-http-client []
-  (AsyncHttpClient.))
+  (let [timer (HashedWheelTimer. 20 TimeUnit/MILLISECONDS)
+        netty-config (doto (NettyAsyncHttpProviderConfig.)
+                       (.setNettyTimer timer))
+        client-config (.build
+                        (doto (AsyncHttpClientConfig$Builder.)
+                          (.setAsyncHttpClientProviderConfig netty-config)))
+        provider (NettyAsyncHttpProvider. client-config)]
+    (AsyncHttpClient. ^AsyncHttpProvider provider)))
 
 (defn request [url]
   (.build (doto (RequestBuilder.)
