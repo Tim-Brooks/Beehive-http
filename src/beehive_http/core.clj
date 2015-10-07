@@ -18,11 +18,13 @@
                                  RequestBuilder
                                  AsyncHttpProvider
                                  AsyncHttpClientConfig$Builder)
-           (com.ning.http.client.providers.netty NettyAsyncHttpProviderConfig NettyAsyncHttpProvider)
+           (com.ning.http.client.providers.netty NettyAsyncHttpProviderConfig
+                                                 NettyAsyncHttpProvider)
            (com.ning.http.client.providers.netty.response NettyResponse)
            (net.uncontended.precipice ServiceProperties RejectedActionException)
            (net.uncontended.precipice_implementations.asynchttp HttpAsyncService)
            (java.util.concurrent TimeUnit)
+           (java.util Map)
            (org.jboss.netty.util HashedWheelTimer)))
 
 (set! *warn-on-reflection* true)
@@ -37,10 +39,19 @@
         provider (NettyAsyncHttpProvider. client-config)]
     (AsyncHttpClient. ^AsyncHttpProvider provider)))
 
-(defn request [url]
-  (.build (doto (RequestBuilder.)
-            (.setUrl ^String url)
-            (.setRequestTimeout 500))))
+(defn format-headers [headers]
+  (into {} (mapv (fn [[k v]]
+                   [k (if (sequential? v) v (vector v))])
+                 headers)))
+
+(defn request [url & {:keys [timeout headers body method]}]
+  (let [builder (RequestBuilder.)]
+    (.setUrl builder ^String url)
+    (when method (.setMethod builder ^String method))
+    (when headers (.setHeaders builder ^Map (format-headers headers)))
+    (when body (.setBody builder ^bytes body))
+    (when timeout (.setRequestTimeout builder 500))
+    (.build builder)))
 
 (defn response [^NettyResponse response]
   {:status (.getStatusCode response)
