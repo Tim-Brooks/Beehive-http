@@ -21,21 +21,36 @@
            (com.ning.http.client.providers.netty NettyAsyncHttpProviderConfig
                                                  NettyAsyncHttpProvider)
            (com.ning.http.client.providers.netty.response NettyResponse)
-           (net.uncontended.precipice ServiceProperties RejectedActionException)
-           (net.uncontended.precipice_implementations.asynchttp HttpAsyncService)
+           (net.uncontended.precipice AsyncService
+                                      ServiceProperties
+                                      RejectedActionException)
+           (net.uncontended.precipice_implementations.asynchttp HttpAsyncService
+                                                                Transformer)
            (java.util.concurrent TimeUnit)
            (java.util Map)
            (org.jboss.netty.util HashedWheelTimer)))
 
 (set! *warn-on-reflection* true)
 
-(defn async-http-client []
+(defn parse-response [^NettyResponse response]
+  {:status (.getStatusCode response)
+   :headers (.getHeaders response)
+   :body (.getResponseBodyAsStream response)})
+
+(def response-transformer
+  (reify Transformer
+    (transform [_ response]
+      (parse-response response))))
+
+(defn async-http-client [& {:keys [socket-timeout]}]
   (let [timer (HashedWheelTimer. 20 TimeUnit/MILLISECONDS)
         netty-config (doto (NettyAsyncHttpProviderConfig.)
                        (.setNettyTimer timer))
         client-config (.build
                         (doto (AsyncHttpClientConfig$Builder.)
-                          (.setAsyncHttpClientProviderConfig netty-config)))
+                          (.setAsyncHttpClientProviderConfig netty-config)
+                          (.setConnectTimeout (int (or socket-timeout 15)))
+                          (.setReadTimeout (int (or socket-timeout 15)))))
         provider (NettyAsyncHttpProvider. client-config)]
     (AsyncHttpClient. ^AsyncHttpProvider provider)))
 
@@ -50,21 +65,16 @@
     (when method (.setMethod builder ^String method))
     (when headers (.setHeaders builder ^Map (format-headers headers)))
     (when body (.setBody builder ^bytes body))
-    (when timeout (.setRequestTimeout builder 500))
+    (when timeout (.setRequestTimeout builder (int timeout)))
     (.build builder)))
 
-(defn response [^NettyResponse response]
-  {:status (.getStatusCode response)
-   :headers (.getHeaders response)
-   :body (.getResponseBodyAsStream response)})
-
-(defn service [name]
+(defn service [name & http-configs]
   (let [properties (ServiceProperties.)]
-    (HttpAsyncService. name properties (async-http-client))))
+    (HttpAsyncService. name properties (apply async-http-client http-configs))))
 
-(defn execute [service request]
+(defn execute [^HttpAsyncService service request]
   (try
-    (f/->CLJResilientFuture
-      (.submitRequest ^HttpAsyncService service request))
+    (f/->BeehiveFuture
+      (.submitRequest service request response-transformer))
     (catch RejectedActionException e
-      (f/->CLJRejectedFuture (.reason e)))))
+      (f/->BeehiveRejectedFuture (.reason e)))))
