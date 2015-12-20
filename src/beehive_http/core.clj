@@ -21,8 +21,7 @@
            (com.ning.http.client.providers.netty NettyAsyncHttpProviderConfig
                                                  NettyAsyncHttpProvider)
            (com.ning.http.client.providers.netty.response NettyResponse)
-           (net.uncontended.precipice AsyncService
-                                      ServiceProperties
+           (net.uncontended.precipice ServiceProperties
                                       RejectedActionException)
            (net.uncontended.precipice_implementations.asynchttp HttpAsyncService
                                                                 Transformer)
