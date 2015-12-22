@@ -41,7 +41,7 @@
       (parse-response response))))
 
 (defn async-http-client [& {:keys [socket-timeout]}]
-  (let [timer (HashedWheelTimer. 20 TimeUnit/MILLISECONDS)
+  (let [timer (HashedWheelTimer. 10 TimeUnit/MILLISECONDS)
         netty-config (doto (NettyAsyncHttpProviderConfig.)
                        (.setNettyTimer timer))
         client-config (.build
