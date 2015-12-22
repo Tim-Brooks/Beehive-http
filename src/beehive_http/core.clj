@@ -33,7 +33,7 @@
 (defn parse-response [^NettyResponse response]
   {:status (.getStatusCode response)
    :headers (.getHeaders response)
-   :body (.getResponseBodyAsStream response)})
+   :body (.getResponseBody response)})
 
 (def response-transformer
   (reify Transformer
