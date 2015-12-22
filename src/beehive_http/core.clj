@@ -14,7 +14,10 @@
 
 (ns beehive-http.core
   (:require [beehive.future :as f])
-  (:import (com.ning.http.client AsyncHttpClient
+  (:import (java.util Map)
+           (java.util.concurrent TimeUnit)
+           (beehive_http Transformer HttpAsyncService)
+           (com.ning.http.client AsyncHttpClient
                                  RequestBuilder
                                  AsyncHttpProvider
                                  AsyncHttpClientConfig$Builder)
@@ -23,10 +26,6 @@
            (com.ning.http.client.providers.netty.response NettyResponse)
            (net.uncontended.precipice ServiceProperties
                                       RejectedActionException)
-           (net.uncontended.precipice_implementations.asynchttp HttpAsyncService
-                                                                Transformer)
-           (java.util.concurrent TimeUnit)
-           (java.util Map)
            (org.jboss.netty.util HashedWheelTimer)))
 
 (set! *warn-on-reflection* true)
@@ -76,4 +75,4 @@
     (f/->BeehiveFuture
       (.submitRequest service request response-transformer))
     (catch RejectedActionException e
-      (f/->BeehiveRejectedFuture (.reason e)))))
+      (f/->BeehiveRejectedFuture e (.reason e)))))
