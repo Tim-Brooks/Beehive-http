@@ -33,7 +33,6 @@ import net.uncontended.precipice.metrics.ActionMetrics;
 import net.uncontended.precipice.metrics.LatencyMetrics;
 import net.uncontended.precipice.metrics.Metric;
 import net.uncontended.precipice.timeout.ActionTimeoutException;
-import net.uncontended.precipice_implementations.asynchttp.Transformer;
 
 import java.util.concurrent.TimeoutException;
 
@@ -53,7 +52,7 @@ public class HttpAsyncService extends AbstractService implements AsyncService {
         return submit(new ResponseAction<>(request, noOpTransformer), -1L);
     }
 
-    public <T> PrecipiceFuture<T> submitRequest(Request request, net.uncontended.precipice_implementations.asynchttp.Transformer<T> transformer) {
+    public <T> PrecipiceFuture<T> submitRequest(Request request, Transformer<T> transformer) {
         return submit(new ResponseAction<>(request, transformer), -1L);
     }
 
@@ -80,9 +79,9 @@ public class HttpAsyncService extends AbstractService implements AsyncService {
     }
 
     private static class ResponseAction<T> extends ServiceRequest<T> {
-        private final net.uncontended.precipice_implementations.asynchttp.Transformer<T> transformer;
+        private final Transformer<T> transformer;
 
-        public ResponseAction(Request request, net.uncontended.precipice_implementations.asynchttp.Transformer<T> transformer) {
+        public ResponseAction(Request request, Transformer<T> transformer) {
             super(request);
             this.transformer = transformer;
         }
